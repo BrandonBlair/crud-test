@@ -1,0 +1,23 @@
+<form><h3>Search for a book!</h3><br />
+    <label>Search By Author:</label>
+    <input id="search_author" name="search_author" type="text" value="" /> <br />
+
+    <label>Search By Title:</label>
+    <input id="search_title" name="search_title" type="text" value="" /> <br />
+
+    <label>Search By ISBN-10:</label>
+    <input id="search_isbn10" name="search_isbn10" type="text" value="" /> <br />
+
+    <button type="submit" value="Submit">Register</button></form>
+    
+{% if search_results %}
+    <table>
+        {% for item in search_results %}
+            <tr>
+            {% for field in item %}
+                <td>field</td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
