@@ -1,3 +1,12 @@
+<style>
+        table, th, td {
+          border: 1px solid black;
+        }
+        
+        th, td {
+            padding: 15px;
+        }
+</style>
 <form><h3>Search for a book!</h3><br />
     <label>Search By Author:</label>
     <input id="search_author" name="search_author" type="text" value="" /> <br />
@@ -8,14 +17,22 @@
     <label>Search By ISBN-10:</label>
     <input id="search_isbn10" name="search_isbn10" type="text" value="" /> <br />
 
-    <button type="submit" value="Submit">Register</button></form>
+    <button type="submit" value="Submit">Search</button></form>
     
 {% if search_results %}
     <table>
+        <tr>
+            <td>ID</td>
+            <td>Title</td>
+            <td>Author</td>
+            <td>ISBN-10</td>
+            <td>ISBN-20</td>
+            <td>Date Added</td>
+        </tr>
         {% for item in search_results %}
             <tr>
             {% for field in item %}
-                <td>field</td>
+                <td>{{field or 'N/A'}}</td>
             {% endfor %}
             </tr>
         {% endfor %}

@@ -1,5 +1,5 @@
 import flask
-from flask import request, make_response, abort, Flask, session, redirect, url_for, render_template
+from flask import request, make_response, abort, Flask, redirect, url_for, render_template
 
 from auth import require_auth
 import db
@@ -13,17 +13,29 @@ app = Flask(__name__)
 # This app is just for testing. Never expose your secret in a production app!
 app.secret_key = b'mysecretkey'
 
+
+@app.route('/', endpoint='index')
 @require_auth
-@app.route('/')
 def index():
+    print("index")
     return redirect(url_for('search'))
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'], endpoint='login')
 def login():
-    if 'session_id' not in session:
-        session['session_id'] = db.create_new_session()
+    # No LSESSION
+    if 'LSESSION' not in request.cookies:
+        resp = make_response(
+            render_template('login.html')
+        )
+        resp.set_cookie('LSESSION', db.create_new_session())
+        return resp
+
+    # Attempted login
     if request.method == 'POST':
+        if not request.form['email'] or not request.form['password']:
+            print("Must provide both an email and a password to login")
+            return redirect(url_for('login'))
         email_provided = request.form['email']
 
         if not db.password_matches(email_provided, request.form['password']):
@@ -31,20 +43,27 @@ def login():
             return render_template('login.html')
 
         member_id = db.get_member_by_email(email_provided)
-        db.associate_session_with_user(session['session_id'], member_id, request.remote_addr, request.headers['User-Agent'])
-        session['token'] = add_token()
-        return render_template('search.html')
+        db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, request.headers['User-Agent'])
+        resp = make_response(redirect(url_for('search')))
+        resp.set_cookie('token', db.add_token(request.cookies['LSESSION']))
+        return resp
 
-    else:
+    elif request.method == 'GET':
         return render_template('login.html')
 
+    else:
+        return redirect(url_for('login'))
 
-@app.route('/join', methods=['POST', 'GET'])
+
+@app.route('/join', methods=['POST', 'GET'], endpoint='join')
 def join():
-    if 'session_id' in session and 'token' in session:
-        if token_is_valid(session['session_id'], session['token']):
-            print("Session alreadhy valid, redirecting to search")
+    if 'LSESSION' in request.cookies and 'token' in request.cookies:
+        if db.token_is_valid(request.cookies['LSESSION'], request.cookies['token']):
+            print("Session already valid, redirecting to search")
             redirect(url_for('search'))
+    if 'LSESSION' not in request.cookies:
+        resp = make_response()
+        resp.set_cookie('LSESSION', db.create_new_session())
     if request.method == 'GET':
         return render_template('join.html')
     elif request.method == 'POST':
@@ -62,29 +81,39 @@ def join():
         if member_id == None:
             print("There was a problem creating user {}".format(request.form['email']))
             return render_template('join.html')
-        db.associate_session_with_user(session['session_id'], member_id, request.remote_addr, request.headers['User-Agent'])
-        token_id = db.add_token(session['session_id'])
+        print(request.cookies)
+        session_id = request.cookies['LSESSION']
+        user_agent = request.headers['User-Agent']
+        db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, user_agent)
+        token_id = db.add_token(request.cookies['LSESSION'])
         print("Token {} created successfully...".format(token_id))
-        session['token'] = token_id
-        return render_template('search.html')
 
-@app.route('/search', methods=['GET'])
+        resp = make_response(redirect(url_for('search')))
+        resp.set_cookie('token', str(token_id))
+        return resp
+
+
+@app.route('/search', methods=['GET'], endpoint='search')
+@require_auth
 def search():
-    if 'author' in request.args:
-        results = db.search_by_author(request.args.get('author'))
-    elif 'title' in request.args:
-        results = db.search_by_title(request.args.get('title'))
-    elif 'isbn10' in request.args:
-        results = db.search_by_isbn10(request.args.get('isbn10'))
+    print("In search")
+    print(request.args)
+    if 'search_author' in request.args:
+        results = db.search_resources_by_author(request.args.get('search_author'))
+    elif 'search_title' in request.args:
+        results = db.search_resources_by_title(request.args.get('search_title'))
+    elif 'search_isbn10' in request.args:
+        results = db.searchresources__by_isbn10(request.args.get('search_isbn10'))
     else:
         results = []
     return render_template('search.html', search_results=results)
 
-@app.route('/logout', methods=['GET'])
+@app.route('/logout', methods=['GET'], endpoint='logout')
 def logout():
-    del session['token']
-    del session['session_id']
+    del request.cookies['token']
+    del request.cookies['LSESSION']
     redirect(url_for('login'))
+
 
 
 
