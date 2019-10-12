@@ -96,17 +96,31 @@ def join():
 @app.route('/search', methods=['GET'], endpoint='search')
 @require_auth
 def search():
-    print("In search")
-    print(request.args)
     if 'search_author' in request.args:
         results = db.search_resources_by_author(request.args.get('search_author'))
     elif 'search_title' in request.args:
         results = db.search_resources_by_title(request.args.get('search_title'))
     elif 'search_isbn10' in request.args:
-        results = db.searchresources__by_isbn10(request.args.get('search_isbn10'))
+        results = db.search_resources_by_isbn10(request.args.get('search_isbn10'))
     else:
         results = []
     return render_template('search.html', search_results=results)
+
+@app.route('/resource', methods=['POST', 'GET'], endpoint='resource')
+@require_auth
+def resource();
+    if request.method == 'GET':
+        return render_template('add_resource.html')
+    elif request.method == 'POST':
+        add_resource_to_inventory(
+            title,
+            author_first,
+            author_middle,
+            author_last,
+            isbn10,
+            isbn13
+        )
+
 
 @app.route('/logout', methods=['GET'], endpoint='logout')
 def logout():

@@ -103,7 +103,7 @@ def create_db_tables(conx):
 
     cursor.execute("CREATE TABLE IF NOT EXISTS member(id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, password TEXT, checked_out INTEGER DEFAULT 0, total_borrowed INTEGER DEFAULT 0, date_joined TEXT DEFAULT CURRENT_DATE, active INTEGER DEFAULT 1)")
     cursor.execute("CREATE TABLE IF NOT EXISTS token(id TEXT PRIMARY KEY, session_id INTEGER, time_created TEXT DEFAULT CURRENT_TIMESTAMP, active INTEGER DEFAULT 1)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS resource(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, author_id INTEGER, isbn_10 TEXT, isbn_13 TEXT, date_added TEXT DEFAULT CURRENT_DATE)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS resource(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, author_id INTEGER, edition TEXT, isbn_10 TEXT, isbn_13 TEXT, date_added TEXT DEFAULT CURRENT_DATE)")
     cursor.execute("CREATE TABLE IF NOT EXISTS stock(id INTEGER PRIMARY KEY AUTOINCREMENT, resource_id INTEGER, date_added TEXT DEFAULT CURRENT_DATE, active INTEGER DEFAULT 1)")
     cursor.execute("CREATE TABLE IF NOT EXISTS borrow(id INTEGER PRIMARY KEY AUTOINCREMENT, member_id INTEGER, stock_id INTEGER, created TEXT DEFAULT CURRENT_TIMESTAMP, closed INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS session(id TEXT PRIMARY KEY, member_id INTEGER, ip_address TEXT, user_agent TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP)")
@@ -306,20 +306,19 @@ def add_borrow(member_id, stock_id):
     return borrow_id
 
 
-# YOU ARE HERE NEED ADD RESOURCE PAGE
-def add_resource(title, author_first, author_middle, author_last, isbn10, isbn13):
+def add_resource(title, author_first, author_middle, author_last, edition, isbn10, isbn13):
     conx = get_sqlite3_conx(DB_NAME)
 
     author_id, author_first, author_middle, author_last = get_author_by_name(author_first, author_middle, author_last)
     print("Found author {} with ID {}".format(author_last, author_id))
     if not author_id:
-        # Author does not exist in our system
+        print("Author {author_first} {author_middle} {author_last} did not exist in the system. Adding...")
         author_id = add_author(author_first, author_middle, author_last)
 
     resource_id = update_db(
         conx,
-        "INSERT INTO resource(title, author_id, isbn_10, isbn_13) VALUES(?, ?, ?, ?)",
-        [title, author_id, isbn10, isbn13]
+        "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
+        [title, author_id, edition, isbn10, isbn13]
     )
     return resource_id
 
