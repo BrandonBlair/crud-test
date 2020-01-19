@@ -122,6 +122,26 @@ def resource():
             request.form['isbn_13']
         )
 
+@app.route('/methods/<user_id>', methods=['DELETE'], endpoint='methods')
+@app.route('/methods', methods=['POST', 'GET'], endpoint='methods')
+def methods(user_id=None):
+    formatted_resp = f"HTTP Request Method {request.method} | "
+    if request.method == 'DELETE':
+        formatted_resp += f"Ok, deleting user {user_id}"
+        return formatted_resp
+    if request.args:
+        formatted_resp += "Query String args: "
+        for arg in request.args.items():
+            formatted_resp += f"{arg[0]} = {arg[1]}, "
+    if request.json:
+        formatted_resp += f"JSON: {request.json}"
+    if request.form:
+        formatted_resp += f"FORM: "
+        for item in request.form.items():
+            formatted_resp += f"{item[0]} = {item[1]}, "
+
+    return formatted_resp
+
 
 @app.route('/logout', methods=['GET'], endpoint='logout')
 def logout():
