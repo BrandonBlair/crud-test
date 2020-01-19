@@ -108,17 +108,18 @@ def search():
 
 @app.route('/resource', methods=['POST', 'GET'], endpoint='resource')
 @require_auth
-def resource();
+def resource():
     if request.method == 'GET':
         return render_template('add_resource.html')
     elif request.method == 'POST':
-        add_resource_to_inventory(
-            title,
-            author_first,
-            author_middle,
-            author_last,
-            isbn10,
-            isbn13
+        print("Got the post", list(request.form.keys()))
+        db.add_resource_to_inventory(
+            request.form['title'],
+            request.form['author_first'],
+            request.form['author_middle'],
+            request.form['author_last'],
+            request.form['isbn_10'],
+            request.form['isbn_13']
         )
 
 

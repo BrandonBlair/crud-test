@@ -85,7 +85,7 @@ def update_db(cxn, qry, args=None):
 def prepare_db():
     conx = get_sqlite3_conx(DB_NAME)
     create_db_tables(conx)
-    #clear_db_data(conx)
+    # clear_db_data(conx)
 
 
 def clear_db_data(conx):
@@ -255,7 +255,10 @@ def get_author_by_name(first=None, middle=None, last=None):
                 last
             )
         )
-    return authors[0]
+    elif authors_found_total == 0:
+        return (None, None, None, None)
+    else:
+        return authors[0]
 
 
 def add_token(session_id):
@@ -306,7 +309,7 @@ def add_borrow(member_id, stock_id):
     return borrow_id
 
 
-def add_resource(title, author_first, author_middle, author_last, edition, isbn10, isbn13):
+def add_resource(title, author_first, author_middle, author_last, edition, isbn10="", isbn13=""):
     conx = get_sqlite3_conx(DB_NAME)
 
     author_id, author_first, author_middle, author_last = get_author_by_name(author_first, author_middle, author_last)
@@ -314,7 +317,7 @@ def add_resource(title, author_first, author_middle, author_last, edition, isbn1
     if not author_id:
         print("Author {author_first} {author_middle} {author_last} did not exist in the system. Adding...")
         author_id = add_author(author_first, author_middle, author_last)
-
+    print("About to update")
     resource_id = update_db(
         conx,
         "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
@@ -347,6 +350,7 @@ def add_stock(resource_id):
     return stock_id
 
 def add_resource_to_inventory(title, author_first, author_middle, author_last, isbn10, isbn13):
+    print("About to add, isbn13")
     conx = get_sqlite3_conx(DB_NAME)
 
     # Has this resource already been added?
@@ -355,10 +359,12 @@ def add_resource_to_inventory(title, author_first, author_middle, author_last, i
         "SELECT * FROM resource WHERE isbn_10 = ?",
         [isbn10],
         single_row=True,
-        all_fields=True
+        all_fields=True,
+        empty_results=True
     )
     resource_id = None
     if existing_resource:
+        print("Already exists")
         resource_id = existing_resource[0]
         # Add another stock for the resource
         add_stock(resource_id)
