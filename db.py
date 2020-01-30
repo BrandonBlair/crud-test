@@ -26,6 +26,31 @@ class NoMemberFoundException(Exception):
 class MultipleAuthorsMatchedException(Exception):
     pass
 
+class Resource:
+    def __init__(self, result, author_first, author_middle, author_last):
+        author_full = ""
+        if author_first:
+            author_full += (author_first + " ")
+        if author_middle:
+            author_full += (author_middle + " ")
+        if author_last:
+            author_full += (author_last)
+        self.id = result[0]
+        self.author = author_full
+        self.title = result[1]
+        self.isbn10 = result[3]
+        self.isbn13 = result[4]
+        self.added = result[5]
+        self.edition = result[6]
+
+class Author:
+    def __init__(self, author_result):
+        self.id = author_result[0]
+        self.first_name = author_result[1]
+        self.middle_name = author_result[2]
+        self.last_name = author_result[3]
+
+
 
 # SQLite3
 def get_sqlite3_conx(db_name):
@@ -128,7 +153,7 @@ def token_is_valid(session_id, token):
 
     # Does the token match?
     if token != current_token:
-        print("token {} != {}", token, current_token)
+        print("token {} != {}".format(token, current_token))
         return False
 
     # Has the TTL expired?
@@ -256,9 +281,9 @@ def get_author_by_name(first=None, middle=None, last=None):
             )
         )
     elif authors_found_total == 0:
-        return (None, None, None, None)
+        return None
     else:
-        return authors[0]
+        return authors[0][0]
 
 
 def add_token(session_id):
@@ -311,16 +336,15 @@ def add_borrow(member_id, stock_id):
 
 def add_resource(title, author_first, author_middle, author_last, edition, isbn10="", isbn13=""):
     conx = get_sqlite3_conx(DB_NAME)
-
-    author_id, author_first, author_middle, author_last = get_author_by_name(author_first, author_middle, author_last)
+    author_id = get_author_by_name(author_first, author_middle, author_last)
     print("Found author {} with ID {}".format(author_last, author_id))
     if not author_id:
-        print("Author {author_first} {author_middle} {author_last} did not exist in the system. Adding...")
+        print("Author {} {} {} did not exist in the system. Adding...".format(author_first, author_middle, author_last))
         author_id = add_author(author_first, author_middle, author_last)
     print("About to update")
     resource_id = update_db(
         conx,
-        "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
+        "INSERT INTO resource(title, author, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
         [title, author_id, edition, isbn10, isbn13]
     )
     return resource_id
@@ -349,8 +373,7 @@ def add_stock(resource_id):
     stock_id = update_db(conx, "INSERT INTO stock(resource_id) VALUES(?)", [resource_id])
     return stock_id
 
-def add_resource_to_inventory(title, author_first, author_middle, author_last, isbn10, isbn13):
-    print("About to add, isbn13")
+def add_resource_to_inventory(title, author_first, author_middle, author_last, edition, isbn10, isbn13):
     conx = get_sqlite3_conx(DB_NAME)
 
     # Has this resource already been added?
@@ -369,21 +392,37 @@ def add_resource_to_inventory(title, author_first, author_middle, author_last, i
         # Add another stock for the resource
         add_stock(resource_id)
     else:
-        resource_id = add_resource(title, author_first, author_middle, author_last, isbn10, isbn13)
+        resource_id = add_resource(title, author_first, author_middle, author_last, edition, isbn10, isbn13)
     return resource_id
 
 
-def search_resources_by_author(author):
+def search_resources_by_author(author_last):
     conx = get_sqlite3_conx(DB_NAME)
-    resources = query_result(
+    matching_authors = query_result(
         conx,
-        "SELECT * FROM resource WHERE author like '%{}%'".format(author),
+        "SELECT * FROM author WHERE last_name like '%{}%'".format(author_last),
         [],
         single_row=False,
         all_fields=True,
         empty_results=True
     )
-    print(resources)
+    print(matching_authors)
+
+    resources = []
+
+    for author_result in matching_authors:
+        author = Author(author_result)
+        result = query_result(
+            conx,
+            "SELECT * FROM resource WHERE author = ?",
+            [author.id],
+            single_row=False,
+            all_fields=True,
+            empty_results=True
+        )
+        if result:
+            curr_result = Resource(result[0], author.first_name, author.middle_name, author.last_name)
+            resources.append(curr_result)
 
     return resources
 

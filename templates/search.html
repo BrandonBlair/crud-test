@@ -17,7 +17,10 @@
     <label>Search By ISBN-10:</label>
     <input id="search_isbn10" name="search_isbn10" type="text" value="" /> <br />
 
-    <button type="submit" value="Submit">Search</button></form>
+    <button type="submit" value="Submit">Search</button>
+</form>
+
+<button onclick="window.location.href = '/resource';">Add Resource</button>
     
 {% if search_results %}
     <table>
@@ -30,11 +33,15 @@
             <td>ISBN-13</td>
             <td>Date Added</td>
         </tr>
-        {% for item in search_results %}
+        {% for resource in search_results %}
             <tr>
-            {% for field in item %}
-                <td>{{field or 'N/A'}}</td>
-            {% endfor %}
+            <td>{{resource.id}}</td>
+            <td>{{resource.title}}</td>
+            <td>{{resource.author}}</td>
+            <td>{{resource.edition}}</td>
+            <td>{{resource.isbn10}}</td>
+            <td>{{resource.isbn13}}</td>
+            <td>{{resource.added}}</td>
             </tr>
         {% endfor %}
     </table>

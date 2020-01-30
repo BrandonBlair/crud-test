@@ -77,10 +77,12 @@ def join():
             print("Password does not match Confirm Password")
             return render_template('join.html')
 
-        member_id = db.add_new_member(request.form['email'], request.form['password'])
+        try:
+            member_id = db.add_new_member(request.form['email'], request.form['password'])
+        except db.InvalidEmailException:
+            return render_template('bad_email.html')
         if member_id == None:
-            print("There was a problem creating user {}".format(request.form['email']))
-            return render_template('join.html')
+            return render_template('bad_email.html')
         print(request.cookies)
         session_id = request.cookies['LSESSION']
         user_agent = request.headers['User-Agent']
@@ -112,15 +114,17 @@ def resource():
     if request.method == 'GET':
         return render_template('add_resource.html')
     elif request.method == 'POST':
-        print("Got the post", list(request.form.keys()))
         db.add_resource_to_inventory(
             request.form['title'],
             request.form['author_first'],
             request.form['author_middle'],
             request.form['author_last'],
+            request.form['edition'],
             request.form['isbn_10'],
             request.form['isbn_13']
         )
+        return render_template('added_successfully.html')
+    
 
 @app.route('/methods/<user_id>', methods=['DELETE'], endpoint='methods')
 @app.route('/methods', methods=['POST', 'GET'], endpoint='methods')
