@@ -1,8 +1,13 @@
+import json
+import json
+
 import flask
 from flask import request, make_response, abort, Flask, redirect, url_for, render_template
+import requests
 
 from auth import require_auth
 import db
+
 
 db.prepare_db()
 
@@ -25,6 +30,7 @@ def index():
 def login():
     # No LSESSION
     if 'LSESSION' not in request.cookies:
+        print("There was not lsession in request.cookies")
         resp = make_response(
             render_template('login.html')
         )
@@ -54,77 +60,127 @@ def login():
     else:
         return redirect(url_for('login'))
 
+@app.route('/v1/join', methods=['POST'], endpoint='join')
+def api_join():
+    headers = {}
 
-@app.route('/join', methods=['POST', 'GET'], endpoint='join')
-def join():
-    if 'LSESSION' in request.cookies and 'token' in request.cookies:
-        if db.token_is_valid(request.cookies['LSESSION'], request.cookies['token']):
-            print("Session already valid, redirecting to search")
-            redirect(url_for('search'))
-    if 'LSESSION' not in request.cookies:
-        resp = make_response()
-        resp.set_cookie('LSESSION', db.create_new_session())
-    if request.method == 'GET':
-        return render_template('join.html')
-    elif request.method == 'POST':
-        required_fields = {'email', 'password', 'confirm_password'}
-        supplied_fields = set(request.form.keys())
-        if not supplied_fields.issubset(required_fields):
-            print("Must include email, password, and confirm_password fields")
-            return render_template('join.html')
+    # Ensure user has a session
+    lsession = request.cookies.get('LSESSION')
+    if lsession is None:  # New user or cookies have been cleared
+        lsession = db.create_new_session()
+    headers['LSESSION'] = lsession
 
-        if request.form['password'] != request.form['confirm_password']:
-            print("Password does not match Confirm Password")
-            return render_template('join.html')
+    # Check fields
+    required_fields = {'email', 'password', 'conf_password'}
+    received_fields = set(request.form.keys())
+    if received_fields.intersection(required_fields) != required_fields:
+        body = {
+            'error': 'Missing fields',
+            'details': (
+                f"Fields required: {', '.join(required_fields)}, ",
+                f"Fields received: {', '.join(received_fields)}"
+            )
+        }
+        return (body, 400, headers)
 
-        try:
-            member_id = db.add_new_member(request.form['email'], request.form['password'])
-        except db.InvalidEmailException:
-            return render_template('bad_email.html')
-        if member_id == None:
-            return render_template('bad_email.html')
-        print(request.cookies)
-        session_id = request.cookies['LSESSION']
-        user_agent = request.headers['User-Agent']
-        db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, user_agent)
-        token_id = db.add_token(request.cookies['LSESSION'])
-        print("Token {} created successfully...".format(token_id))
+    # Validate password
+    pw = request.form.get('password')
+    conf_pw = request.form.get('conf_password')
+    if pw != conf_pw:
+        body = {
+            'error': 'passwordMismatch',
+            'details': (
+                f"{pw} != {conf_pw} (password vs confirmation)"
+            )
+        }
+        return (body, 400, headers)
 
-        resp = make_response(redirect(url_for('search')))
-        resp.set_cookie('token', str(token_id))
-        return resp
+    # Add new member
+    try:
+        member_id = db.add_new_member(request.form['email'], request.form['password'])
+    except db.InvalidEmailException as iee:
+        body = {
+            'error': 'invalidEmail',
+            'details': str(iee)
+        }
+        return (body, 400, headers)
+
+    if member_id == None:  # Failed to create a new member
+        body = {
+            'error': 'joinFailed',
+            'details': 'Failed to create new member'
+        }
+        return (body, 400, headers)
+
+    # Associate session with user
+    session_id = lsession
+    user_agent = request.headers['User-Agent']
+    db.associate_session_with_user(lsession, member_id, request.remote_addr, user_agent)
+    token_id = db.add_token(lsession)
+    print("Token {} created successfully...".format(token_id))
+    headers['token'] = str(token_id)
+    body = {
+        'error': 'None',
+        'details': 'Member created successfully'
+    }
+    return (body, 200, headers)
 
 
 @app.route('/search', methods=['GET'], endpoint='search')
 @require_auth
 def search():
-    if 'search_author' in request.args:
-        results = db.search_resources_by_author(request.args.get('search_author'))
-    elif 'search_title' in request.args:
-        results = db.search_resources_by_title(request.args.get('search_title'))
-    elif 'search_isbn10' in request.args:
-        results = db.search_resources_by_isbn10(request.args.get('search_isbn10'))
-    else:
-        results = []
-    return render_template('search.html', search_results=results)
+    return render_template('search.html')
 
-@app.route('/resource', methods=['POST', 'GET'], endpoint='resource')
+
+@app.route('/v1/search', methods=['GET'], endpoint='api_search')
+@require_auth
+def api_search():
+    author = request.args.get('author')
+    title = request.args.get('title')
+    isbn = request.args.get('isbn')
+
+    if not author and not title and not isbn:  # No fields were provided
+        body = {
+            'results': []
+        }
+        return (body, 200)
+
+    fields = {
+        'author': author,
+        'title': title,
+        'isbn': isbn
+    }
+
+    results = db.search_resources(**fields)  # Pass dict as kwargs for extensibility
+    results_as_dicts = [r.__dict__ for r in results]
+    body = {
+        'results': results_as_dicts
+    }
+
+    return (body, 200)
+
+
+@app.route('/resource', methods=['GET'], endpoint='resource')
 @require_auth
 def resource():
-    if request.method == 'GET':
-        return render_template('add_resource.html')
-    elif request.method == 'POST':
-        db.add_resource_to_inventory(
-            request.form['title'],
-            request.form['author_first'],
-            request.form['author_middle'],
-            request.form['author_last'],
-            request.form['edition'],
-            request.form['isbn_10'],
-            request.form['isbn_13']
-        )
-        return render_template('added_successfully.html')
-    
+    return render_template('add_resource.html')
+
+
+@app.route('/v1/resource', methods=['POST'], endpoint='api_resource')
+@require_auth
+def api_resource():
+    body = request.json
+    resource = db.add_resource_to_inventory(
+        body['title'],
+        body['author_first'],
+        body['author_middle'],
+        body['author_last'],
+        body['edition'],
+        body['isbn10'],
+        body['isbn13']
+    )
+    return (resource, 200)
+
 
 @app.route('/methods/<user_id>', methods=['DELETE'], endpoint='methods')
 @app.route('/methods', methods=['POST', 'GET'], endpoint='methods')

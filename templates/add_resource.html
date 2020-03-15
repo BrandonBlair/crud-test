@@ -1,18 +1,96 @@
-<form action="/resource", method="POST">
-    <h3>Add Library Resource: </h3><br />
-    <label>Title</label>
-    <input id="title" name="title" type="text" value="" /> <br />
-    <label>Author (First)</label>
-    <input id="author_first" name="author_first" type="text" value="" /> <br />
-    <label>Author (Middle)</label>
-    <input id="author_middle" name="author_middle" type="text" value="" /> <br />
-    <label>Author (Last)</label>
-    <input id="author_last" name="author_last" type="text" value="" /> <br />
-    <label>Edition</label>
-    <input id="edition" name="edition" type="text" value="" /> <br />
-    <label>ISBN-10</label>
-    <input id="isbn_10" name="isbn_10" type="text" value="" /> <br /> 
-    <label>ISBN-13</label>
-    <input id="isbn_13" name="isbn_13" type="text" value="" /> <br />
-     <button type="submit" value="Submit">Submit</button>
-</form>
+<html>
+    <head>
+        <title>Add a new resource</title>
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/library.js') }}"></script>
+    </head>
+
+    <body>
+
+    <form>
+        <h3>Add Library Resource: </h3><br />
+        <label>Title</label>
+        <input id="title" name="title" type="text" value="" /> <br />
+        <div id="titleMissingBanner" class="alert" style="display:none">
+            <h4>Please provide a title</h4>
+        </div>
+        <label>Author (First)</label>
+        <input id="author_first" name="author_first" type="text" value="" /> <br />
+        <label>Author (Middle)</label>
+        <input id="author_middle" name="author_middle" type="text" value="" /> <br />
+        <label>Author (Last)</label>
+        <input id="author_last" name="author_last" type="text" value="" /> <br />
+        <div id="authorLastMissingBanner" class="alert" style="display:none">
+            <h4>Please provide a last name for the author</h4>
+        </div>
+        <label>Edition</label>
+        <input id="edition" name="edition" type="text" value="" /> <br />
+        <label>ISBN-10</label>
+        <input id="isbn10" name="isbn10" type="text" value="" /> <br />
+        <label>ISBN-13</label>
+        <input id="isbn13" name="isbn13" type="text" value="" /> <br />
+        <div id="isbnMissingBanner" class="alert" style="display:none">
+            <h4>Please provide either an ISBN-10 or ISBN-13 for the resource</h4>
+        </div>
+
+        <div id="resourceAddedBanner" class="alert" style="display:none">
+            <h4>Resource added successfully!</h4>
+        </div>
+
+    </form>
+    <button value="Submit" onclick=addResource()>Submit</button>
+
+    <script>
+        function addResource() {
+            title = document.getElementById("title").value;
+            author_first = document.getElementById("author_first").value;
+            author_middle = document.getElementById("author_middle").value;
+            author_last = document.getElementById("author_last").value;
+            edition = document.getElementById("edition").value;
+            isbn10 = document.getElementById("isbn10").value;
+            isbn13 = document.getElementById("isbn13").value;
+
+            console.log(isbn10 + isbn13);
+
+            titleMissingBanner = document.getElementById("titleMissingBanner");
+            authorLastMissingBanner = document.getElementById("authorLastMissingBanner");
+            isbnMissingBanner = document.getElementById("isbnMissingBanner");
+
+            successfullyAddedBanner = document.getElementById("resourceAddedBanner");
+
+            titleMissingBanner.style.display = "none";
+            authorLastMissingBanner.style.display = "none";
+            isbnMissingBanner.style.display = "none";
+            successfullyAddedBanner.style.display = "none";
+
+            var errorFound = false;
+
+            // Perform checks
+            if (title.length < 1) {
+                titleMissingBanner.style.display = "block";
+                errorFound = true;
+            }
+
+            if (author_last.length < 1) {
+                authorLastMissingBanner.style.display = "block";
+                errorFound = true;
+            }
+
+            if (isbn10.length < 1 && isbn13.length < 1) {
+                isbnMissingBanner.style.display = "block";
+                errorFound = true;
+            }
+
+            if (errorFound) {
+                return;
+            }
+
+            bibi();
+
+            postResource(title, author_first, author_middle, author_last, edition, isbn10, isbn13);
+
+            successfullyAddedBanner.style.display = "block";
+
+        }
+    </script>
+    </body>
+</html>

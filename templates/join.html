@@ -1,14 +1,100 @@
-<form action="/join", method="post"><h3>Register a new library user</h3><br />
-    <label>Email Address</label>
-    <input id="email" name="email" type="text" value="" /> <br />
+<html>
+    <head>
+        <title>
+            Become a Member
+        </title>
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/library.js') }}"></script>
+    </head>
+    <body>
+        <form>
+            <h3>Register a new library user</h3><br />
+            <label>Email Address</label>
+            <input id="email" name="email" type="text" value="" /> <br />
+            <div id="emailMissingBanner" class="alert" style="display:none">
+                <h4>Please provide a valid email address.</h4>
+            </div>
 
-    <label>Password</label>
-    <input id="password" name="password" type="password" value="" /> <br />
+            <label>Password</label>
+            <input id="password" name="password" type="password" value="" /> <br />
+            <div id="passwordMissingBanner" class="alert" style="display:none">
+                <h4>Please provide a password.</h4>
+            </div>
 
-    <label>Confirm Password</label>
-    <input id="confirm_password" name="confirm_password" type="password" value="" /> <br />
+            <label>Confirm Password</label>
+            <input id="confirm_password" name="confirm_password" type="password" value="" /> <br />
+            <div id="confirmPasswordMissingBanner" class="alert" style="display:none">
+                <h4>Please confirm your password.</h4>
+            </div>
+            <div id="passwordMismatchBanner" class="alert" style="display:none">
+                <h4>The password and confirmation password do not match.</h4>
+            </div>
+        </form>
 
-    <button type="submit" value="Submit">Register</button>
-    
-</form>
-<button onclick="window.location.href = '/login';">Log in as a registered user</button>
+        <button value="Submit" onclick=attemptToJoin()>Register</button>
+
+        <button onclick="window.location.href = '/login';">Log in as a registered user</button>
+
+        <script>
+        function emailIsValid(email) {
+            return email.includes("@");  // Yes, I know. This is just a proof of concept.
+        }
+
+        function passwordIsConfirmed(pw, cpw) {
+            return pw.localeCompare(cpw) == 0;
+        }
+
+        function attemptToJoin() {
+            var email = document.getElementById("email").value;
+            var emailAlert = document.getElementById("emailMissingBanner");
+
+            var password = document.getElementById("password").value;
+            var pwAlert = document.getElementById("passwordMissingBanner");
+
+            var confPassword = document.getElementById("confirm_password").value;
+            var confPwAlert = document.getElementById("confirmPasswordMissingBanner");
+            var psMismatchAlert = document.getElementById("passwordMismatchBanner");
+
+            emailAlert.style.display = "none";
+            pwAlert.style.display = "none";
+            confPwAlert.style.display = "none";
+            psMismatchAlert.style.display = "none";
+
+            var errorPresent = false;
+
+            if (!emailIsValid(email)) {
+                console.log("Email was not valid")
+                emailAlert.style.display = "block";
+                errorPresent = true;
+            }
+
+            if (password.length < 1) {
+                console.log("Password was empty")
+
+                pwAlert.style.display = "block";
+                errorPresent = true;
+            }
+
+            if (confPassword.length < 1) {
+                console.log("Conf pw was empty")
+
+                confPwAlert.style.display = "block";
+                errorPresent = true;
+            }
+
+            if (!passwordIsConfirmed(password, confPassword)) {
+                console.log("Passwords did not match")
+
+                psMismatchAlert.style.display = "block";
+                errorPresent = true;
+            }
+
+            if (errorPresent) {
+                return;
+            }
+
+            postJoin(email, password, confPassword);
+
+        }
+        </script>
+    </body>
+</html>

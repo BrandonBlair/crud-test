@@ -26,8 +26,18 @@ class NoMemberFoundException(Exception):
 class MultipleAuthorsMatchedException(Exception):
     pass
 
+class ResourceCreateException(Exception):
+    pass
+
 class Resource:
-    def __init__(self, result, author_first, author_middle, author_last):
+    def __init__(self, result=None, author_first=None, author_middle=None, author_last=None):
+        if result and (not author_first or not author_middle or not author_last):
+            raise ResourceCreateException(
+                f"Expected author first, middle, and last names, received '{author_first}' '{author_middle}' '{author_last}'"
+            )
+        if not result:
+            return None  # Empty object
+
         author_full = ""
         if author_first:
             author_full += (author_first + " ")
@@ -254,6 +264,33 @@ def deactivate_member(member_id):
     deactivate_tokens(member_id)
     return update_db(conx, "UPDATE member SET active=0 WHERE id=?", [member_id])
 
+
+def get_authors_by_id(author_ids):
+    conx = get_sqlite3_conx(DB_NAME)
+
+    author_map = {}
+
+    print("AUTHR IDS", author_ids)
+
+    where_clause = f"id in ({', '.join(['?' for i in author_ids])})"
+    print(where_clause)
+
+    qry = f"SELECT * FROM author WHERE {where_clause}"
+    author_results = query_result(
+        conx,
+        qry,
+        author_ids,
+        single_row=False,
+        all_fields=True,
+        empty_results=True
+    )
+
+    for result in author_results:
+        author = Author(result)
+        author_map[author.id] = author
+
+    return author_map
+
 def get_author_by_name(first=None, middle=None, last=None):
     if not first and not middle and not last:
         raise Exception("Must provide first, middle, or last name to retrieve author")
@@ -379,78 +416,87 @@ def add_resource_to_inventory(title, author_first, author_middle, author_last, e
     # Has this resource already been added?
     existing_resource = query_result(
         conx,
-        "SELECT * FROM resource WHERE isbn_10 = ?",
-        [isbn10],
+        "SELECT * FROM resource WHERE isbn_10 = ? or isbn_13 = ?",
+        [isbn10, isbn13],
         single_row=True,
         all_fields=True,
         empty_results=True
     )
     resource_id = None
     if existing_resource:
-        print("Already exists")
         resource_id = existing_resource[0]
         # Add another stock for the resource
         add_stock(resource_id)
     else:
         resource_id = add_resource(title, author_first, author_middle, author_last, edition, isbn10, isbn13)
-    return resource_id
+
+    resource = {
+        'id': resource_id,
+        'title': title,
+        'author': f"{author_first} {author_middle} {author_last}".replace('  ', ' '),
+        'edition': edition,
+        'isbn10': isbn10,
+        'isbn13': isbn13,
+
+    }
+    return resource
 
 
-def search_resources_by_author(author_last):
+def search_resources(*args, **kwargs):
     conx = get_sqlite3_conx(DB_NAME)
-    matching_authors = query_result(
-        conx,
-        "SELECT * FROM author WHERE last_name like '%{}%'".format(author_last),
-        [],
-        single_row=False,
-        all_fields=True,
-        empty_results=True
-    )
-    print(matching_authors)
+
+    # Supported fields
+    author_name = kwargs.get('author')
+    author_map = {}
+    title = kwargs.get('title')
+    isbn = kwargs.get('isbn')
+
+    where_clause = ""
+    params = []
+    and_ = ""
+
+    if author_name:
+        author_last = author_name.split(' ')[-1]
+        author_map = get_authors_by_last_name(author_last)
+        print("!!!!!!", author_map)
+        where_clause += f"{and_}author in ({', '.join(['?' for a in author_map.keys()])}) "
+        params += author_map.keys()
+        and_ = "AND "
+
+    if title:
+        where_clause += f"{and_}title like ? "
+        params.append(f"%{title}%")
+        and_ = "AND "
+
+    if isbn:
+        where_clause += f"{and_}isbn_10 = ?"
+        params.append(isbn)
+        and_ = "AND "
 
     resources = []
+    result = query_result(
+        conx,
+        f"SELECT * FROM resource WHERE {where_clause}",
+        params,
+        single_row=False,
+        all_fields=True,
+        empty_results=True
+    )
 
-    for author_result in matching_authors:
-        author = Author(author_result)
-        result = query_result(
-            conx,
-            "SELECT * FROM resource WHERE author = ?",
-            [author.id],
-            single_row=False,
-            all_fields=True,
-            empty_results=True
+    resource_author_ids = []
+    for resource in result:
+        author_id = resource[2]
+        resource_author_ids.append(author_id)
+
+    if not author_map.keys():  # We need to retrieve author names to populate resources
+        author_map.update(get_authors_by_id(resource_author_ids))
+
+    # Associate resources with author names
+    for resrc in result:
+        associated_author = author_map[int(resrc[2])]
+        resources.append(
+            Resource(resrc, associated_author.first_name, associated_author.middle_name, associated_author.last_name)
         )
-        if result:
-            curr_result = Resource(result[0], author.first_name, author.middle_name, author.last_name)
-            resources.append(curr_result)
-
-    return resources
-
-
-def search_resources_by_title(title):
-    conx = get_sqlite3_conx(DB_NAME)
-    resources = query_result(
-        conx,
-        "SELECT * FROM resource WHERE title like '{}%'".format(title),
-        [],
-        single_row=False,
-        all_fields=True,
-        empty_results=True
-    )
-
-    return resources
-
-
-def search_resources_by_isbn10(isbn10):
-    conx = get_sqlite3_conx(DB_NAME)
-    resources = query_result(
-        conx,
-        "SELECT * FROM resource WHERE isbn_10 like '{}%'".format(isbn10),
-        [],
-        single_row=False,
-        all_fields=True,
-        empty_results=True
-    )
 
     return resources
 
@@ -525,3 +571,22 @@ def checkout_resource(member_id, stock_id):
     borrow_id = add_borrow(member_id, stock_id)
 
     return borrow_id
+
+def get_authors_by_last_name(author_last):
+    conx = get_sqlite3_conx(DB_NAME)
+    author_map = {}
+    # Search for all authors with the same last name
+    matching_authors = query_result(
+    conx,
+    "SELECT * FROM author WHERE last_name like '%{}%'".format(author_last),
+    [],
+    single_row=False,
+    all_fields=True,
+    empty_results=True
+    )
+
+    for author_result in matching_authors:
+        author = Author(author_result)
+        author_map[author.id] = author
+
+    return author_map

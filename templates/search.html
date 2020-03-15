@@ -1,48 +1,97 @@
+<html>
+    <head>
+        <title>Search for a Resource</title>
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts/library.js') }}"></script>
+    </head>
 <style>
         table, th, td {
           border: 1px solid black;
         }
-        
+
         th, td {
             padding: 15px;
         }
 </style>
 <form><h3>Search for a book!</h3><br />
-    <label>Search By Author:</label>
+    <label>Author:</label>
     <input id="search_author" name="search_author" type="text" value="" /> <br />
 
-    <label>Search By Title:</label>
+    <label>Title:</label>
     <input id="search_title" name="search_title" type="text" value="" /> <br />
 
-    <label>Search By ISBN-10:</label>
+    <label>ISBN-10:</label>
     <input id="search_isbn10" name="search_isbn10" type="text" value="" /> <br />
-
-    <button type="submit" value="Submit">Search</button>
+    <div id="emptyFieldsBanner" class="alert" style="display:none">
+        <h4>Please enter at least one search field.</h4>
+    </div>
 </form>
+<button value="Submit" onclick=performSearch()>Search</button>
 
 <button onclick="window.location.href = '/resource';">Add Resource</button>
-    
-{% if search_results %}
-    <table>
-        <tr>
-            <td>ID</td>
-            <td>Title</td>
-            <td>Author</td>
-            <td>Edition</td>
-            <td>ISBN-10</td>
-            <td>ISBN-13</td>
-            <td>Date Added</td>
-        </tr>
-        {% for resource in search_results %}
-            <tr>
-            <td>{{resource.id}}</td>
-            <td>{{resource.title}}</td>
-            <td>{{resource.author}}</td>
-            <td>{{resource.edition}}</td>
-            <td>{{resource.isbn10}}</td>
-            <td>{{resource.isbn13}}</td>
-            <td>{{resource.added}}</td>
-            </tr>
-        {% endfor %}
-    </table>
-{% endif %}
+
+</br>
+
+<table id="searchResults" style="display:none">
+</table>
+
+<script>
+    function performSearch() {
+        // Clear table
+        resultsTable = document.getElementById("searchResults");
+        resultsTable.innerHTML = "";
+        
+        var author = document.getElementById("search_author").value;
+        var title = document.getElementById("search_title").value;
+        var isbn = document.getElementById("search_isbn10").value;
+
+        var emptyFieldsBanner = document.getElementById("emptyFieldsBanner");
+        emptyFieldsBanner.style.display = "none";
+
+        if ((author.length + title.length + isbn.length) < 1) {  // No fields have been provided
+            emptyFieldsBanner.style.display = "block";
+            return;
+        }
+
+        var resp = getSearch(author, title, isbn);
+        var results = JSON.parse(resp)["results"];
+
+        if (results.length > 0) {
+
+            // Populate column titles
+            var titleRow = resultsTable.insertRow(-1);
+            authorTitleCell = titleRow.insertCell(-1)
+            titleTitleCell = titleRow.insertCell(-1)
+            editionTitleCell = titleRow.insertCell(-1)
+            isbnTitleCell = titleRow.insertCell(-1)
+
+            authorTitleCell.innerHTML = "Author";
+            titleTitleCell.innerHTML = "Title";
+            editionTitleCell.innerHTML = "Edition";
+            isbnTitleCell.innerHTML = "ISBN-13"
+
+             // Populate search results
+             
+             for (result of results) {
+                var row = resultsTable.insertRow(-1);
+                var rmap = new Map(Object.entries(result));
+                titleCell = row.insertCell(-1)
+                authorCell = row.insertCell(-1)
+                editionCell = row.insertCell(-1)
+                isbnCell = row.insertCell(-1)
+
+                titleCell.innerHTML = rmap.get("title");
+                authorCell.innerHTML = rmap.get("author");
+                editionCell.innerHTML = rmap.get("edition");
+                isbnCell.innerHTML = rmap.get("isbn13")
+
+            }
+
+            resultsTable.style.display = "table";
+
+        }
+
+
+
+    }
+</script>
+</html>
