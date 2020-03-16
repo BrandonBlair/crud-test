@@ -9,7 +9,6 @@ function postJoin(email, pw, cpw) {
   Http.open("POST", url);
   Http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   Http.send("email=" + email + "&password=" + pw + "&confirm_password=" + cpw);
-  Http.send();
 
   Http.onreadystatechange = (e) => {
     console.log(Http.responseText);

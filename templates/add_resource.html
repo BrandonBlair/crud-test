@@ -38,6 +38,8 @@
 
     </form>
     <button value="Submit" onclick=addResource()>Submit</button>
+    <button value="Back" onclick="window.location.href = '/search';">Back to Search</button>
+    
 
     <script>
         function addResource() {
@@ -83,8 +85,6 @@
             if (errorFound) {
                 return;
             }
-
-            bibi();
 
             postResource(title, author_first, author_middle, author_last, edition, isbn10, isbn13);
 

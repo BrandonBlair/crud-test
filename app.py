@@ -59,8 +59,12 @@ def login():
 
     else:
         return redirect(url_for('login'))
+        
+@app.route('/join', methods=['GET'], endpoint='join')
+def join():
+    return render_template('join.html')
 
-@app.route('/v1/join', methods=['POST'], endpoint='join')
+@app.route('/v1/join', methods=['POST'], endpoint='api_join')
 def api_join():
     headers = {}
 
@@ -71,7 +75,7 @@ def api_join():
     headers['LSESSION'] = lsession
 
     # Check fields
-    required_fields = {'email', 'password', 'conf_password'}
+    required_fields = {'email', 'password', 'confirm_password'}
     received_fields = set(request.form.keys())
     if received_fields.intersection(required_fields) != required_fields:
         body = {
@@ -85,7 +89,7 @@ def api_join():
 
     # Validate password
     pw = request.form.get('password')
-    conf_pw = request.form.get('conf_password')
+    conf_pw = request.form.get('confirm_password')
     if pw != conf_pw:
         body = {
             'error': 'passwordMismatch',
