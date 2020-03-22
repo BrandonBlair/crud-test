@@ -39,7 +39,7 @@
         // Clear table
         resultsTable = document.getElementById("searchResults");
         resultsTable.innerHTML = "";
-        
+
         var author = document.getElementById("search_author").value;
         var title = document.getElementById("search_title").value;
         var isbn = document.getElementById("search_isbn10").value;
@@ -70,7 +70,7 @@
             isbnTitleCell.innerHTML = "ISBN-13"
 
              // Populate search results
-             
+
              for (result of results) {
                 var row = resultsTable.insertRow(-1);
                 var rmap = new Map(Object.entries(result));

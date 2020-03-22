@@ -15,6 +15,16 @@ function postJoin(email, pw, cpw) {
   }
 }
 
+function postLogin(email, password) {
+  var path = "/v1/login";
+  var url = serverUrl + path;
+
+  xhr.open("POST", url, false);
+  Http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  Http.send("email=" + email + "&password=" + pw);
+  return xhr.responseText;
+}
+
 function getSearch(author, title, isbn) {
   var path = "/v1/search";
   var url = serverUrl + path;
@@ -37,7 +47,6 @@ function getSearch(author, title, isbn) {
   }
 
   url = url.concat(qs);
-  var result;
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, false);
   xhr.send(null);

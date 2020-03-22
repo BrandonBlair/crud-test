@@ -22,44 +22,44 @@ app.secret_key = b'mysecretkey'
 @app.route('/', endpoint='index')
 @require_auth
 def index():
-    print("index")
     return redirect(url_for('search'))
 
 
-@app.route('/login', methods=['GET', 'POST'], endpoint='login')
-def login():
-    # No LSESSION
+@app.route('/v1/login', methods=['POST'], endpoint='api_login')
+def api_login():
     if 'LSESSION' not in request.cookies:
-        print("There was not lsession in request.cookies")
-        resp = make_response(
-            render_template('login.html')
-        )
         resp.set_cookie('LSESSION', db.create_new_session())
-        return resp
 
-    # Attempted login
-    if request.method == 'POST':
-        if not request.form['email'] or not request.form['password']:
-            print("Must provide both an email and a password to login")
-            return redirect(url_for('login'))
-        email_provided = request.form['email']
+    if not request.form['email'] or not request.form['password']:
+        body = {
+            'error': 'missingFields',
+            'details': 'Must include email and password'
+        }
+        return (body, 400)
 
-        if not db.password_matches(email_provided, request.form['password']):
-            print("Login not valid")
-            return render_template('login.html')
+    email_provided = request.form['email']
+    if not db.password_matches(email_provided, request.form['password']):
+        body = {
+            'error': 'passwordInvalid',
+            'details': 'Password was not valid'
+        }
+        return (body, 400)
 
-        member_id = db.get_member_by_email(email_provided)
-        db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, request.headers['User-Agent'])
-        resp = make_response(redirect(url_for('search')))
-        resp.set_cookie('token', db.add_token(request.cookies['LSESSION']))
-        return resp
+    member_id = db.get_member_by_email(email_provided)
+    db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, request.headers['User-Agent'])
+    token = db.add_token(request.cookies['LSESSION'])
+    headers = {'Set-Cookie': f'token={token}'}
+    body = {
+        'error': 'None',
+        'details': 'Member logged in successfully'
+    }
+    return (body, 200, headers)
 
-    elif request.method == 'GET':
-        return render_template('login.html')
 
-    else:
-        return redirect(url_for('login'))
-        
+@app.route('/login', methods=['GET'], endpoint='login')
+def login():
+    return render_template('login.html')
+
 @app.route('/join', methods=['GET'], endpoint='join')
 def join():
     return render_template('join.html')

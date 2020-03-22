@@ -1,10 +1,45 @@
-<form action="/login", method="POST">
+<form>
     <h3>Log in</h3><br />
     <label>email address</label>
-    <input id="email" name="email" type="text" value="" /> <br /> 
+    <input id="email" name="email" type="text" value="" /> <br />
+    <div id="emptyEmailBanner" class="alert" style="display:none">
+        <h4>Please enter an email address</h4>
+    </div>
     <label>password</label>
-    <input id="password" name="password" type="password" value="" /> <br /> 
-     <button type="submit" value="Submit">Login</button>
+    <input id="password" name="password" type="password" value="" /> <br />
+    <div id="emptyPasswordBanner" class="alert" style="display:none">
+        <h4>Please enter a password</h4>
+    </div>
 </form>
 
+<button id="loginBtn" onclick=attemptLogin()>Login</button>
+
 <button type="submit" value="Submit" onclick="window.location.href = '/join';">Register a New User</button>
+
+
+<script>
+    function attemptLogin() {
+        missingEmailBanner = document.getElementById("emptyEmailBanner");
+        missingPasswordBanner = document.getElementById("emptyPasswordBanner");
+
+        // Reset Email and Password banners
+        missingEmailBanner.style.display = "none";
+        missingPasswordBanner.style.display = "none";
+
+        email = document.getElementById("email").value;
+        if (email.length < 1) {
+            missingEmailBanner.style.display = "block";
+        }
+
+        password = document.getElementById("password").value;
+        if (password.length < 1) {
+            missingPasswordBanner.style.display = "block";
+        }
+
+        resp = postLogin(email, password);
+        
+        console.log(resp);
+        return resp;
+
+    }
+</script>
