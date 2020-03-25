@@ -144,11 +144,37 @@ def create_db_tables(conx):
     cursor.execute("CREATE TABLE IF NOT EXISTS session(id TEXT PRIMARY KEY, member_id INTEGER, ip_address TEXT, user_agent TEXT, created TEXT DEFAULT CURRENT_TIMESTAMP)")
     cursor.execute("CREATE TABLE IF NOT EXISTS author(id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT, middle_name TEXT, last_name TEXT)")  # How do we handle authors with the same name?
 
-def token_is_valid(session_id, token):
+def token_is_valid(token):
+    conx = get_sqlite3_conx(DB_NAME)
+    time_created = query_result(
+        conx,
+        "SELECT time_created FROM token WHERE id=? AND active=1",
+        [session_id],
+        single_row=True,
+        all_fields=False,
+        empty_results=True
+    )
+    if not time_created:
+        print("No active tokens")
+        # There are no active tokens
+        return False
+
+    # Has the TTL expired?
+    token_created_dt = datetime.strptime(time_created, "%Y-%m-%d %X")
+    current_time = datetime.now()
+    secs_token_active = (current_time - token_created_dt).total_seconds()
+
+    if secs_token_active > TOKEN_TTL_SECS:
+        return False
+
+    return True
+
+
+def sesson_is_valid(session_id):
     conx = get_sqlite3_conx(DB_NAME)
     token_data = query_result(
         conx,
-        "SELECT id, time_created FROM token WHERE session_id=? AND active=1",
+        "SELECT time_created FROM token WHERE session_id=? AND active=1",
         [session_id],
         single_row=True,
         all_fields=True,
@@ -159,12 +185,7 @@ def token_is_valid(session_id, token):
         # There are no active tokens
         return False
 
-    current_token, time_created = token_data
-
-    # Does the token match?
-    if token != current_token:
-        print("token {} != {}".format(token, current_token))
-        return False
+    time_created = token_data
 
     # Has the TTL expired?
     token_created_dt = datetime.strptime(time_created, "%Y-%m-%d %X")

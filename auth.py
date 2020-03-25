@@ -3,18 +3,33 @@ from db import token_is_valid, create_new_session
 
 def require_auth(func, *args, **kwargs):
     def wrapper():
-        if 'LSESSION' not in request.cookies and 'token' not in request.cookies:
-            resp = make_response(redirect(url_for('login')))
-            resp.set_cookie('LSESSION', create_new_session())
-            return resp
+        headers = {}
 
-        session_id = request.cookies['LSESSION']
-        token = request.cookies['token']
-        if not token_is_valid(session_id, token):
-            # Session is invalid, redirect to login page
+        # Use token if it is present
+        token = request.cookies.get('token', None)
+        if token_is_valid(token):
+            resp = make_response(redirect(url_for('search')))
+            return func(*args, **kwargs)
+
+        lsession = request.headers.get('LSESSION', None)
+        # Session missing
+        if not lsession:
             resp = make_response(redirect(url_for('login')))
-            resp.set_cookie('LSESSION', create_new_session())
-            return resp
+            headers['LSESSION'] = create_new_session()
+            body = {
+                'error': 'noSessionError',
+                'details': 'No session found'
+            }
+            return (body, 400, headers)
+
+        # Session had expired
+        session_id = lsession
+        if not session_is_valid(session_id):
+            body = {
+                'error': 'sessionExpiredError',
+                'details': 'Session not valid'
+            }
+            return (body, 403, headers)
 
         return func(*args, **kwargs)
 

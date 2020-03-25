@@ -27,28 +27,31 @@ def index():
 
 @app.route('/v1/login', methods=['POST'], endpoint='api_login')
 def api_login():
-    if 'LSESSION' not in request.cookies:
-        resp.set_cookie('LSESSION', db.create_new_session())
-
+    headers = {}
+    lsession = request.headers.get('LSESSION', None)
+    if not lsession:
+        lsession = db.create_new_session()
+        headers['LSESSION'] = lsession
     if not request.form['email'] or not request.form['password']:
         body = {
             'error': 'missingFields',
             'details': 'Must include email and password'
         }
-        return (body, 400)
+        return (body, 400, headers)
 
     email_provided = request.form['email']
     if not db.password_matches(email_provided, request.form['password']):
+        print(email_provided, request.form['password'])
         body = {
             'error': 'passwordInvalid',
             'details': 'Password was not valid'
         }
-        return (body, 400)
+        return (body, 400, headers)
 
     member_id = db.get_member_by_email(email_provided)
-    db.associate_session_with_user(request.cookies['LSESSION'], member_id, request.remote_addr, request.headers['User-Agent'])
-    token = db.add_token(request.cookies['LSESSION'])
-    headers = {'Set-Cookie': f'token={token}'}
+    db.associate_session_with_user(lsession, member_id, request.remote_addr, request.headers['User-Agent'])
+    token = db.add_token(lsession)
+    headers['Set-Cookie'] = f'token={token}'
     body = {
         'error': 'None',
         'details': 'Member logged in successfully'
@@ -69,7 +72,7 @@ def api_join():
     headers = {}
 
     # Ensure user has a session
-    lsession = request.cookies.get('LSESSION')
+    lsession = request.headers.get('LSESSION')
     if lsession is None:  # New user or cookies have been cleared
         lsession = db.create_new_session()
     headers['LSESSION'] = lsession
@@ -122,7 +125,7 @@ def api_join():
     db.associate_session_with_user(lsession, member_id, request.remote_addr, user_agent)
     token_id = db.add_token(lsession)
     print("Token {} created successfully...".format(token_id))
-    headers['token'] = str(token_id)
+    headers['Set-Cookie'] = str(token_id)
     body = {
         'error': 'None',
         'details': 'Member created successfully'
@@ -133,6 +136,7 @@ def api_join():
 @app.route('/search', methods=['GET'], endpoint='search')
 @require_auth
 def search():
+    print("Found it")
     return render_template('search.html')
 
 

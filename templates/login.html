@@ -1,3 +1,7 @@
+<head>
+    <title>Library Login</title>
+    <script type="text/javascript" src="{{ url_for('static', filename='scripts/library.js') }}"></script>
+</head>
 <form>
     <h3>Log in</h3><br />
     <label>email address</label>
@@ -10,6 +14,9 @@
     <div id="emptyPasswordBanner" class="alert" style="display:none">
         <h4>Please enter a password</h4>
     </div>
+    <div id="invalidLoginBanner" class="alert" style="display:none">
+        <h4>Credentials did not match any user in our system</h4>
+    </div>
 </form>
 
 <button id="loginBtn" onclick=attemptLogin()>Login</button>
@@ -21,10 +28,12 @@
     function attemptLogin() {
         missingEmailBanner = document.getElementById("emptyEmailBanner");
         missingPasswordBanner = document.getElementById("emptyPasswordBanner");
+        invalidLoginBanner = document.getElementById("invalidLoginBanner");
 
         // Reset Email and Password banners
         missingEmailBanner.style.display = "none";
         missingPasswordBanner.style.display = "none";
+        invalidLoginBanner.style.display = "none";
 
         email = document.getElementById("email").value;
         if (email.length < 1) {
@@ -37,9 +46,12 @@
         }
 
         resp = postLogin(email, password);
-        
         console.log(resp);
-        return resp;
+        if (resp.status === 200) {
+            window.location.replace("/search");
+        } else {
+            invalidLoginBanner.style.display = "block";
+        }
 
     }
 </script>
