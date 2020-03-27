@@ -20,9 +20,13 @@ app.secret_key = b'mysecretkey'
 
 
 @app.route('/', endpoint='index')
-@require_auth
 def index():
-    return redirect(url_for('search'))
+    headers = {}
+    lsession = request.headers.get('LSESSION', None)
+    if not lsession:
+        lsession = db.create_new_session()
+        headers['LSESSION'] = lsession
+    return redirect(url_for('login')), 302, headers
 
 
 @app.route('/v1/login', methods=['POST'], endpoint='api_login')
@@ -51,7 +55,7 @@ def api_login():
     member_id = db.get_member_by_email(email_provided)
     db.associate_session_with_user(lsession, member_id, request.remote_addr, request.headers['User-Agent'])
     token = db.add_token(lsession)
-    headers['Set-Cookie'] = f'token={token}'
+    headers['Set-Cookie'] = f'token={token}; Path=/; HttpOnly'
     body = {
         'error': 'None',
         'details': 'Member logged in successfully'
@@ -136,7 +140,6 @@ def api_join():
 @app.route('/search', methods=['GET'], endpoint='search')
 @require_auth
 def search():
-    print("Found it")
     return render_template('search.html')
 
 

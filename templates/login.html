@@ -25,6 +25,13 @@
 
 
 <script>
+
+    function createCookie(name,value) {
+        var date = new Date();
+        date.setTime(date.getTime()+(24*60*60*1000));
+        var expires = "; expires="+date.toGMTString();
+        document.cookie = name+"="+value+expires+"; path=/";
+    }
     function attemptLogin() {
         missingEmailBanner = document.getElementById("emptyEmailBanner");
         missingPasswordBanner = document.getElementById("emptyPasswordBanner");
@@ -46,7 +53,6 @@
         }
 
         resp = postLogin(email, password);
-        console.log(resp);
         if (resp.status === 200) {
             window.location.replace("/search");
         } else {

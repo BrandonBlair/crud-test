@@ -149,7 +149,7 @@ def token_is_valid(token):
     time_created = query_result(
         conx,
         "SELECT time_created FROM token WHERE id=? AND active=1",
-        [session_id],
+        [token],
         single_row=True,
         all_fields=False,
         empty_results=True
