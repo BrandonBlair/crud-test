@@ -32,6 +32,10 @@
 
         <button value="Submit" onclick=attemptToJoin()>Register</button>
 
+        <div id="joinFailedBanner" class="alert" style="display:none">
+            <h4>There was a problem creating a user. Please check your username and password before trying again.</h4>
+        </div>
+
         <button onclick="window.location.href = '/login';">Log in as a registered user</button>
 
         <script>
@@ -44,25 +48,37 @@
         }
 
         function attemptToJoin() {
+            // Email field
             var email = document.getElementById("email").value;
             var emailAlert = document.getElementById("emailMissingBanner");
 
+            // Password field
             var password = document.getElementById("password").value;
             var pwAlert = document.getElementById("passwordMissingBanner");
 
+            // Confirm Password field
             var confPassword = document.getElementById("confirm_password").value;
             var confPwAlert = document.getElementById("confirmPasswordMissingBanner");
+
+            // Password Mismatch alert
             var psMismatchAlert = document.getElementById("passwordMismatchBanner");
 
+            // Join Failed Alert
+            var joinFailedAlert = document.getElementById("joinFailedBanner");
+
+            // Hide all alerts by default
             emailAlert.style.display = "none";
             pwAlert.style.display = "none";
             confPwAlert.style.display = "none";
             psMismatchAlert.style.display = "none";
+            joinFailedAlert.style.display = "none";
 
+            //
             var errorPresent = false;
 
             if (!emailIsValid(email)) {
                 console.log("Email was not valid")
+                // Show "invalid email" banner
                 emailAlert.style.display = "block";
                 errorPresent = true;
             }
@@ -70,6 +86,7 @@
             if (password.length < 1) {
                 console.log("Password was empty")
 
+                // Show "empty password " banner
                 pwAlert.style.display = "block";
                 errorPresent = true;
             }
@@ -77,13 +94,15 @@
             if (confPassword.length < 1) {
                 console.log("Conf pw was empty")
 
+                // Show "empty password confirmation" banner
                 confPwAlert.style.display = "block";
                 errorPresent = true;
             }
 
             if (!passwordIsConfirmed(password, confPassword)) {
                 console.log("Passwords did not match")
-
+                
+                // Show "passwords don't match" banner
                 psMismatchAlert.style.display = "block";
                 errorPresent = true;
             }
@@ -92,8 +111,20 @@
                 return;
             }
 
-            postJoin(email, password, confPassword);
+            var resp = postJoin(email, password, confPassword);
+            console.log(resp);
+            var respJson = JSON.parse(resp)
+            var status = respJson["status"];
+            var body = respJson["body"];
 
+            if (status != "200") {
+                console.log(body)
+                joinFailedAlert.style.display = "block";
+                return
+            } else {
+                joinFailedAlert.style.display = "none";
+                window.location.href = "http://127.0.0.1:5000/search";
+            }
         }
         </script>
     </body>

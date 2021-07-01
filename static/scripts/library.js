@@ -6,12 +6,19 @@ function postJoin(email, pw, cpw) {
   var path = "/v1/join";
   var url = serverUrl + path;
   var Http = new XMLHttpRequest();
+  Http.responseType = "json";
   Http.open("POST", url);
   Http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   Http.send("email=" + email + "&password=" + pw + "&confirm_password=" + cpw);
 
   Http.onreadystatechange = (e) => {
-    console.log(Http.responseText);
+    var resp = Http.response;
+    console.log(resp);
+    var status = Http.status;
+    console.log(resp);
+    var body = resp.details;
+    var error = resp.error;
+    return {status: status, body: body, error: error};
   }
 }
 
@@ -23,7 +30,7 @@ function postLogin(email, password) {
   xhr.open("POST", url, false);
   xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   xhr.send("email=" + email + "&password=" + password);
-  
+
   console.log(xhr.getAllResponseHeaders());
   return {status: xhr.status, body: xhr.responseText};
 }
