@@ -112,16 +112,14 @@
             }
 
             var resp = postJoin(email, password, confPassword);
-            console.log(resp);
-            var respJson = JSON.parse(resp)
-            var status = respJson["status"];
-            var body = respJson["body"];
+            var status = resp.status;
+            var body = resp.body;
 
             if (status != "200") {
-                console.log(body)
                 joinFailedAlert.style.display = "block";
                 return
             } else {
+                document.cookie = "token="
                 joinFailedAlert.style.display = "none";
                 window.location.href = "http://127.0.0.1:5000/search";
             }

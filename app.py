@@ -124,12 +124,10 @@ def api_join():
         return (body, 400, headers)
 
     # Associate session with user
-    session_id = lsession
     user_agent = request.headers['User-Agent']
     db.associate_session_with_user(lsession, member_id, request.remote_addr, user_agent)
     token_id = db.add_token(lsession)
-    print("Token {} created successfully...".format(token_id))
-    headers['Set-Cookie'] = str(token_id)
+    headers['Set-Cookie'] = f'token={token_id}; Path=/; HttpOnly'
     body = {
         'error': 'None',
         'details': 'Member created successfully'

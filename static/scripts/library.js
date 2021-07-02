@@ -6,20 +6,16 @@ function postJoin(email, pw, cpw) {
   var path = "/v1/join";
   var url = serverUrl + path;
   var Http = new XMLHttpRequest();
-  Http.responseType = "json";
-  Http.open("POST", url);
+  Http.open("POST", url, false);  // Boy, forgetting to set this to false wastes a lot of dev hours
   Http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   Http.send("email=" + email + "&password=" + pw + "&confirm_password=" + cpw);
 
-  Http.onreadystatechange = (e) => {
-    var resp = Http.response;
-    console.log(resp);
-    var status = Http.status;
-    console.log(resp);
-    var body = resp.details;
-    var error = resp.error;
-    return {status: status, body: body, error: error};
-  }
+  var resp = Http.response;
+  var status = Http.status;
+  var body = resp.details;
+  var error = resp.error;
+  var view = {status: status, body: body, error: error};
+  return view
 }
 
 function postLogin(email, password) {
