@@ -31,7 +31,7 @@ class ResourceCreateException(Exception):
 
 class Resource:
     def __init__(self, result=None, author_first=None, author_middle=None, author_last=None):
-        if result and (not author_first or not author_middle or not author_last):
+        if result and (not author_first or not author_last):
             raise ResourceCreateException(
                 f"Expected author first, middle, and last names, received '{author_first}' '{author_middle}' '{author_last}'"
             )
@@ -395,14 +395,14 @@ def add_borrow(member_id, stock_id):
 def add_resource(title, author_first, author_middle, author_last, edition, isbn10="", isbn13=""):
     conx = get_sqlite3_conx(DB_NAME)
     author_id = get_author_by_name(author_first, author_middle, author_last)
-    print("Found author {} with ID {}".format(author_last, author_id))
+    
     if not author_id:
         print("Author {} {} {} did not exist in the system. Adding...".format(author_first, author_middle, author_last))
         author_id = add_author(author_first, author_middle, author_last)
-    print("About to update")
+
     resource_id = update_db(
         conx,
-        "INSERT INTO resource(title, author, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
+        "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
         [title, author_id, edition, isbn10, isbn13]
     )
     return resource_id
@@ -479,8 +479,7 @@ def search_resources(*args, **kwargs):
     if author_name:
         author_last = author_name.split(' ')[-1]
         author_map = get_authors_by_last_name(author_last)
-        print("!!!!!!", author_map)
-        where_clause += f"{and_}author in ({', '.join(['?' for a in author_map.keys()])}) "
+        where_clause += f"{and_}author_id in ({', '.join(['?' for a in author_map.keys()])}) "
         params += author_map.keys()
         and_ = "AND "
 
