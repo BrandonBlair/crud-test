@@ -179,16 +179,36 @@ def resource():
 @require_auth
 def api_resource():
     body = request.json
-    resource = db.add_resource_to_inventory(
-        body['title'],
-        body['author_first'],
-        body['author_middle'],
-        body['author_last'],
-        body['edition'],
-        body['isbn10'],
-        body['isbn13']
-    )
-    return (resource, 200)
+
+    error = 'None'
+    details = 'None'
+    status = 0
+    resource = {}
+
+    try:
+        resource = db.add_resource_to_inventory(
+            body['title'],
+            body['authorFirst'],
+            body['authorMiddle'],
+            body['authorLast'],
+            body['edition'],
+            body['isbn10'],
+            body['isbn13']
+        )
+        details = f"{body['title']} added successfully."
+        status = 200
+    except Exception as e:
+        print(e)
+        error = "add-resource-error"
+        details = str(e)
+        status = 500
+
+    body = {
+        'resource': resource,
+        'error': error,
+        'details': details
+    }
+    return (body, status)
 
 
 @app.route('/methods/<user_id>', methods=['DELETE'], endpoint='methods')

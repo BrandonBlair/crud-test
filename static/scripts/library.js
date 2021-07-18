@@ -60,19 +60,19 @@ function getSearch(author, title, isbn) {
 
 }
 
-function postResource(title, author_first, author_middle, author_last, edition, isbn10, isbn13) {
+function postResource(title, authorFirst, authorMiddle, authorLast, edition, isbn10, isbn13) {
   var path = "/v1/resource";
   var url = serverUrl + path;
   var Http = new XMLHttpRequest();
-  Http.open("POST", url);
+  Http.open("POST", url, false);
   Http.setRequestHeader("Content-type", "application/json");
 
   var body = JSON.stringify(
     {
       "title": title,
-      "author_first": author_first,
-      "author_middle": author_middle,
-      "author_last": author_last,
+      "authorFirst": authorFirst,
+      "authorMiddle": authorMiddle,
+      "authorLast": authorLast,
       "edition": edition,
       "isbn10": isbn10,
       "isbn13": isbn13,
@@ -80,7 +80,10 @@ function postResource(title, author_first, author_middle, author_last, edition, 
   );
   Http.send(body);
 
-  Http.onreadystatechange = (e) => {
-    console.log(Http.responseText);
-  }
+  var resp = Http.response;
+  var status = Http.status;
+  var body = resp.details;
+  var error = resp.error;
+  var view = {status: status, body: body, error: error};
+  return view
 }

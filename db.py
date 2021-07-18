@@ -400,12 +400,16 @@ def add_resource(title, author_first, author_middle, author_last, edition, isbn1
         print("Author {} {} {} did not exist in the system. Adding...".format(author_first, author_middle, author_last))
         author_id = add_author(author_first, author_middle, author_last)
 
-    resource_id = update_db(
-        conx,
-        "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
-        [title, author_id, edition, isbn10, isbn13]
-    )
-    return resource_id
+    try:
+        resource_id = update_db(
+            conx,
+            "INSERT INTO resource(title, author_id, edition, isbn_10, isbn_13) VALUES(?, ?, ?, ?, ?)",
+            [title, author_id, edition, isbn10, isbn13]
+        )
+        return resource_id
+    except Exception as e:
+        print(str(e))
+        raise e
 
 
 def deactivate_resource(resource_id):
