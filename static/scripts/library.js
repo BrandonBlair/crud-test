@@ -78,6 +78,7 @@ function postResource(title, authorFirst, authorMiddle, authorLast, edition, isb
       "isbn13": isbn13,
     }
   );
+
   Http.send(body);
 
   var resp = Http.response;

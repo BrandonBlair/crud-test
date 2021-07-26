@@ -62,27 +62,31 @@
             authorTitleCell = titleRow.insertCell(-1)
             titleTitleCell = titleRow.insertCell(-1)
             editionTitleCell = titleRow.insertCell(-1)
-            isbnTitleCell = titleRow.insertCell(-1)
+            isbn10TitleCell = titleRow.insertCell(-1)
+            isbn13TitleCell = titleRow.insertCell(-1)
 
             authorTitleCell.innerHTML = "Author";
             titleTitleCell.innerHTML = "Title";
             editionTitleCell.innerHTML = "Edition";
-            isbnTitleCell.innerHTML = "ISBN-13"
+            isbn10TitleCell.innerHTML = "ISBN-10"
+            isbn13TitleCell.innerHTML = "ISBN-13"
 
              // Populate search results
 
              for (result of results) {
                 var row = resultsTable.insertRow(-1);
                 var rmap = new Map(Object.entries(result));
-                titleCell = row.insertCell(-1)
                 authorCell = row.insertCell(-1)
+                titleCell = row.insertCell(-1)
                 editionCell = row.insertCell(-1)
-                isbnCell = row.insertCell(-1)
+                isbn10Cell = row.insertCell(-1)
+                isbn13Cell = row.insertCell(-1)
 
-                titleCell.innerHTML = rmap.get("title");
                 authorCell.innerHTML = rmap.get("author");
+                titleCell.innerHTML = rmap.get("title");
                 editionCell.innerHTML = rmap.get("edition");
-                isbnCell.innerHTML = rmap.get("isbn13")
+                isbn10Cell.innerHTML = rmap.get("isbn10")
+                isbn13Cell.innerHTML = rmap.get("isbn13")
 
             }
 
