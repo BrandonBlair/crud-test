@@ -48,10 +48,10 @@ class Resource:
         self.id = result[0]
         self.author = author_full
         self.title = result[1]
-        self.isbn10 = result[3]
-        self.isbn13 = result[4]
-        self.added = result[5]
-        self.edition = result[6]
+        self.isbn10 = result[4]
+        self.isbn13 = result[5]
+        self.added = result[6]
+        self.edition = result[3]
 
 class Author:
     def __init__(self, author_result):
